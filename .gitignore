@@ -38,12 +38,11 @@ db.sqlite3
 db.sqlite3-journal
 
 # Media files (student photos, uploads)
-/media/
+
 *.jpg
 *.jpeg
 *.png
 *.gif
-/media/student_photos/
 
 /staticfiles/
 
