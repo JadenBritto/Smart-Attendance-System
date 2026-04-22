@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Session Detail - SmartAttend{% endblock %}
+{% block page_title %}Attendance Session{% endblock %}
+{% block page_actions %}
+<div class="flex items-center gap-2">
+    <a href="{% url 'attendance:export_session' session.id %}?format=csv" class="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        CSV
+    </a>
+    <a href="{% url 'attendance:export_session' session.id %}?format=excel" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-500 transition">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Excel
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Session Info -->
+<div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+    <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
+        </div>
+        <div>
+            <p class="font-semibold text-slate-800">{{ session.class_section }} &mdash; {{ session.subject }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">{{ session.date|date:"F j, Y" }} &middot; {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }} &middot; Taken by {{ session.taken_by.get_full_name|default:session.taken_by.username }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-slate-200 p-5 text-center">
+        <p class="text-3xl font-bold text-slate-800">{{ total }}</p>
+        <p class="text-xs text-slate-400 mt-1">Total Students</p>
+    </div>
+    <div class="bg-white rounded-xl border border-emerald-200 p-5 text-center">
+        <p class="text-3xl font-bold text-emerald-600">{{ present.count }}</p>
+        <p class="text-xs text-slate-400 mt-1">Present</p>
+    </div>
+    <div class="bg-white rounded-xl border border-red-200 p-5 text-center">
+        <p class="text-3xl font-bold text-red-500">{{ absent.count }}</p>
+        <p class="text-xs text-slate-400 mt-1">Absent</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Present -->
+    <div>
+        <h2 class="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+            Present ({{ present.count }})
+        </h2>
+        <div class="space-y-2">
+            {% for record in present %}
+            <div class="bg-white rounded-lg border border-slate-200 p-3 flex justify-between items-center border-l-4 border-l-emerald-500">
+                <div class="flex items-center gap-3">
+                    {% if record.student.photo %}
+                    <img src="{{ record.student.photo.url }}" class="w-9 h-9 rounded-full object-cover">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
+                        <span class="text-slate-400 text-xs font-bold">{{ record.student.first_name.0 }}</span>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="font-medium text-slate-800 text-sm">{{ record.student.full_name }}</p>
+                        <p class="text-xs text-slate-400">{{ record.student.roll_number }}{% if record.confidence %} &middot; {{ record.confidence|floatformat:0 }}%{% endif %}</p>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'attendance:manual_toggle' session.id record.student.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium hover:bg-red-50 px-2 py-1 rounded transition">Mark Absent</button>
+                </form>
+            </div>
+            {% empty %}
+            <p class="text-slate-400 text-sm py-4 text-center">No students present yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Absent -->
+    <div>
+        <h2 class="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+            Absent ({{ absent.count }})
+        </h2>
+        <div class="space-y-2">
+            {% for record in absent %}
+            <div class="bg-white rounded-lg border border-slate-200 p-3 flex justify-between items-center border-l-4 border-l-red-400">
+                <div class="flex items-center gap-3">
+                    {% if record.student.photo %}
+                    <img src="{{ record.student.photo.url }}" class="w-9 h-9 rounded-full object-cover">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
+                        <span class="text-slate-400 text-xs font-bold">{{ record.student.first_name.0 }}</span>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="font-medium text-slate-800 text-sm">{{ record.student.full_name }}</p>
+                        <p class="text-xs text-slate-400">{{ record.student.roll_number }}</p>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'attendance:manual_toggle' session.id record.student.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium hover:bg-emerald-50 px-2 py-1 rounded transition">Mark Present</button>
+                </form>
+            </div>
+            {% empty %}
+            <p class="text-slate-400 text-sm py-4 text-center">All students are present!</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

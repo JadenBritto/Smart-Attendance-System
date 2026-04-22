@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Attendance System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sidebar: { DEFAULT: '#0f172a', light: '#1e293b', accent: '#334155' },
+                        brand: { DEFAULT: '#6366f1', light: '#818cf8', dark: '#4f46e5' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .sidebar-link { transition: all 0.15s ease; }
+        .sidebar-link:hover { background: rgba(99,102,241,0.1); }
+        .sidebar-link.active { background: rgba(99,102,241,0.15); border-right: 3px solid #6366f1; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-100 min-h-screen">
+    {% if user.is_authenticated %}
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-sidebar fixed inset-y-0 left-0 z-30 flex flex-col">
+            <!-- Brand -->
+            <div class="flex items-center gap-3 px-5 h-16 border-b border-sidebar-accent">
+                <div class="w-9 h-9 bg-brand rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <span class="text-white font-bold text-lg tracking-tight">SmartAttend</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+                <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Main</p>
+                <a href="{% url 'attendance:dashboard' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.url_name == 'dashboard' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                    Dashboard
+                </a>
+                <a href="{% url 'attendance:select_class' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.url_name == 'select_class' or request.resolver_match.url_name == 'take_attendance' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                    Take Attendance
+                </a>
+
+                {% if is_admin_role or is_class_teacher %}
+                <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-5 mb-2">Manage</p>
+                <a href="{% url 'students:student_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.app_name == 'students' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                    Students
+                </a>
+                {% endif %}
+
+                {% if is_admin_role %}
+                <a href="{% url 'classes:class_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.url_name == 'class_list' or request.resolver_match.url_name == 'class_create' or request.resolver_match.url_name == 'class_edit' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
+                    Classes
+                </a>
+                <a href="{% url 'classes:department_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.url_name == 'department_list' or request.resolver_match.url_name == 'department_create' or request.resolver_match.url_name == 'department_edit' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/></svg>
+                    Departments
+                </a>
+                {% endif %}
+
+                <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-5 mb-2">Analytics</p>
+                <a href="{% url 'attendance:reports' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.url_name == 'reports' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                    Reports
+                </a>
+
+                {% if is_admin_role %}
+                <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-5 mb-2">Admin</p>
+                <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:text-white {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'logout' %}active text-white{% endif %}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
+                    Users
+                </a>
+                {% endif %}
+            </nav>
+
+            <!-- User Footer -->
+            <div class="border-t border-sidebar-accent px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-brand/20 flex items-center justify-center text-brand-light font-bold text-sm">
+                        {{ user.first_name.0 }}{{ user.last_name.0 }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="text-xs text-slate-400 truncate">{{ user_role_display }}</p>
+                    </div>
+                    <a href="{% url 'accounts:logout' %}" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition" title="Sign out">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 ml-64">
+            <!-- Top Bar -->
+            <header class="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8">
+                <h2 class="text-lg font-semibold text-slate-800">{% block page_title %}{% endblock %}</h2>
+                <div class="flex items-center gap-3">
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </header>
+
+            {% if messages %}
+            <div class="px-8 pt-4">
+                {% for message in messages %}
+                <div class="mb-2 px-4 py-3 rounded-lg text-sm flex items-center gap-2 {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                    {% if message.tags == 'success' %}
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <main class="p-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <main>
+        {% block login_content %}{% endblock %}
+    </main>
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

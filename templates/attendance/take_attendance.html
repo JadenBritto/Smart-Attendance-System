@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Take Attendance - {{ cls }} - SmartAttend{% endblock %}
+{% block page_title %}Taking Attendance{% endblock %}
+{% block page_actions %}
+<form method="post" action="{% url 'attendance:close_session' session.id %}">
+    {% csrf_token %}
+    <button type="submit" id="closeSession" class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500 transition text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z"/></svg>
+        Close Session
+    </button>
+</form>
+{% endblock %}
+
+{% block content %}
+<!-- Session Info Bar -->
+<div class="bg-white rounded-xl border border-slate-200 p-4 mb-5 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342"/></svg>
+        </div>
+        <div>
+            <p class="text-sm font-semibold text-slate-800">{{ cls }} &mdash; {{ session.subject }}</p>
+            <p class="text-xs text-slate-400">{{ session.date|date:"F j, Y" }} &middot; {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+            Active
+        </span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <!-- Webcam Panel -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="relative rounded-lg overflow-hidden bg-slate-900" style="min-height: 400px;">
+                <video id="webcam" autoplay playsinline class="w-full rounded-lg"></video>
+                <canvas id="overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+                <div class="flex gap-2">
+                    <button type="button" id="startCamera" class="inline-flex items-center gap-2 bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600 transition text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg>
+                        Start Camera
+                    </button>
+                    <button type="button" id="toggleScanning" class="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-500 transition text-sm font-medium hidden">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        Start Scanning
+                    </button>
+                </div>
+                <span id="scan-status" class="text-xs text-slate-400"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Panel -->
+    <div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-slate-700">Students</h3>
+                <div class="text-sm font-semibold">
+                    <span id="presentCount" class="text-emerald-600">0</span>
+                    <span class="text-slate-300">/</span>
+                    <span id="totalCount" class="text-slate-500">0</span>
+                </div>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mb-4">
+                <div id="progressBar" class="h-1.5 rounded-full bg-emerald-500 transition-all" style="width: 0%"></div>
+            </div>
+            <div id="studentList" class="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+const sessionId = {{ session.id }};
+const studentsData = {{ students_json|safe }};
+</script>
+<script src="/static/js/attendance.js"></script>
+{% endblock %}
